@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="viewport"
+          content="width=device-width,initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
+    <title>My Quote</title>
+    <script src="https://sw91.net/devops/js-test/waykiBridge.js"></script>
+    <link rel="stylesheet" href="dapp.css">
+</head>
+<body>
+<ul class="nav">
+    <li class="nav"><a href="example.html">How it Works</a></li>
+    <li class="nav"><a href="index.html">Dapp</a></li>
+</ul>
+
+
+<div class='book'>
+    <div class='cover left'></div>
+    <div class='cover spine'></div>
+    <div class='cover right'></div>
+    <div class='page left'>
+        <h1>
+            Dapp: my quote
+        </h1>
+        <hr>
+        <p>
+            its simple
+            <br>
+            write your name
+            <br>
+            and a quote
+            <br>
+            We save it to the blockchain
+        </p>
+        <br>
+
+
+        <ol>
+            <li><input id="yourname" type="text" placeholder="Your Name..."/></li>
+            <li> <textarea id="yourquote" type="text" placeholder="Your Quote..."></textarea></li>
+        </ol>
+        <button onclick="addName()">Save</button>
+        <br>
+        <p id="saved"></p>
+        <p id="txid"></p>
+    </div>
+
+    <div class='page right'>
+        <br>
+        <br>
+        <hr>
+        <h1>
+            Now! lets find your name
+            <br>
+        </h1>
+
+        <input id="key" type="text" placeholder="Your Name..."/>
+        <button onclick="callName()">Find</button>
+        <br>
+        <br>
+        <br>
+        <p id="key2">
+        </p>
+    </div>
+</div>
+<div class='read'>Dapps are awesome</div>
+
+<script>
+    // add name to contract data
+    function addName() {
+        var yourname = document.getElementById("yourname").value;
+        var nameLen = yourname.length;
+        console.log(yourname);
+        console.log(nameLen);
+
+        var yourquote = document.getElementById("yourquote").value;
+        var ageLen = yourquote.length;
+        console.log(yourquote);
+        console.log(nameLen, yourname, ageLen, yourquote);
+        console.log(convertToHex(nameLen, yourname, ageLen, yourquote));
+
+        waykiBridge.walletPlugin(
+            "walletPluginContractInvoke",
+
+            {
+                regId: "1022278-1",
+                contractField: convertToHex(nameLen, yourname, ageLen, yourquote),
+                inputAmount: "",
+                remark: ""
+
+            },
+            function (res) {
+                function timer() {
+                    document.getElementById('txid').innerHTML = `<p>Saved Successfully</p>`
+
+                }
+                if (res.result.txid){
+
+                    document.getElementById('txid').innerHTML = `<p>Saving your name...</p>`
+                    setTimeout(timer, 1000);
+
+                    // document.getElementById('txid').innerHTML = `<p>${res.result.txid}</p>`
+                }else{
+                    document.getElementById('txid').innerHTML = `<p>Saved failed... Do you have the wallet installed?</p>`
+                }
+
+                console.log(res)
+                console.log(res.result.txid)
+
+            },
+            function (err) {
+                console.log(err)
+            }
+        );
+    }
+
+
+    // call contract to get your name
+    function callName() {
+        // get values from input
+        let key2 = document.getElementById("key").value
+
+        document.getElementById("key2").innerHTML = `<p>Searching...</p>`
+        // use the baas api to post json data to get data from contract
+        postData('https://baas-test.wiccdev.org/v2/api/contract/getcontractdata',
+            {
+                "key": key2,
+                "regid": "1022278-1",
+                "returndatatype": "STRING"
+            })
+        // return data and display data
+            .then(function (data) {
+
+                if (JSON.stringify(data.data.key)){
+                    JSON.stringify(document.getElementById("key2").innerHTML =
+                        `<p>Name: ${data.data.key} </p><p>Quote: ${data.data.value}</p>`);
+                    console.log(JSON.stringify(data.data.value))
+                }else{
+                    document.getElementById("key2").innerHTML = `<p>Named Not Found</p>`
+                }
+
+
+                console.log(JSON.stringify(data));
+
+            })
+            .catch(error =>
+                console.error(error));
+    }
+
+
+    function postData(url = '', data = {}) {
+        // Default options are marked with *
+        return fetch(url, {
+            method: 'POST', // *GET, POST, PUT, DELETE, etc.
+            mode: 'cors', // no-cors, cors, *same-origin
+            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+            credentials: 'same-origin', // include, *same-origin, omit
+            headers: {
+                'Content-Type': 'application/json',
+                // 'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            redirect: 'follow', // manual, *follow, error
+            referrer: 'no-referrer', // no-referrer, *client
+            body: JSON.stringify(data), // body data type must match "Content-Type" header
+        })
+            .then(response => response.json()); // parses JSON response into native JavaScript objects
+    }
+
+    //convert name and age and lengths into hex
+    function convertToHex(num1, str1, num2, str2) {
+        var hex1 = '';
+        var hex2 = '';
+        var hex3 = '';
+        var hex4 = '';
+
+        // for number or decemals
+        hex1 = (num1 + 0x10000).toString(16).substr(-2).toLowerCase() + "000000";
+
+        for (var i = 0; i < str1.length; i++) {
+            hex2 += '' + str1.charCodeAt(i).toString(16);
+        }
+        hex3 = (num2 + 0x10000).toString(16).substr(-2).toLowerCase() + "000000";
+
+        for (var i = 0; i < str2.length; i++) {
+            hex4 += '' + str2.charCodeAt(i).toString(16);
+        }
+        return hex1 + hex2 + hex3 + hex4;
+    }
+</script>
+</body>
+</html>
